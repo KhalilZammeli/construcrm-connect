@@ -39,9 +39,15 @@ const Clients = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Create a new client with a generated ID
+      // Fix: Use type assertion to ensure all required fields are provided
       const newClient: Client = {
         id: clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1,
-        ...values,
+        name: values.name,
+        contact: values.contact,
+        email: values.email,
+        phone: values.phone,
+        location: values.location,
+        status: values.status,
         projects: 0
       };
       
