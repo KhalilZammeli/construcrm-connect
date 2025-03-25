@@ -31,7 +31,7 @@ const Documents = () => {
     doc.client.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddDocument = async (values: DocumentFormValues) => {
+  const handleAddDocument = async (values: DocumentFormValues, file?: File) => {
     try {
       setIsLoading(true);
       // Simulate API call
@@ -48,7 +48,9 @@ const Documents = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         fileSize: values.fileSize || '0 KB',
-        fileType: values.fileType || 'pdf'
+        fileType: values.fileType || 'pdf',
+        fileName: values.fileName || `document-${Date.now()}.${values.fileType || 'pdf'}`,
+        file: file
       };
       
       setDocuments(prev => [...prev, newDocument]);
@@ -61,7 +63,7 @@ const Documents = () => {
     }
   };
 
-  const handleEditDocument = async (id: number, values: DocumentFormValues) => {
+  const handleEditDocument = async (id: number, values: DocumentFormValues, file?: File) => {
     try {
       setIsLoading(true);
       // Simulate API call
@@ -79,6 +81,8 @@ const Documents = () => {
                 status: values.status,
                 fileSize: values.fileSize || doc.fileSize,
                 fileType: values.fileType || doc.fileType,
+                fileName: values.fileName || doc.fileName,
+                file: file || doc.file,
                 updatedAt: new Date().toISOString()
               } 
             : doc

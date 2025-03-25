@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DocumentForm, { Document, DocumentFormValues } from './DocumentForm';
 
 interface EditDocumentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (id: number, values: DocumentFormValues) => void;
+  onSubmit: (id: number, values: DocumentFormValues, file?: File) => void;
   document: Document | null;
   isLoading?: boolean;
 }
@@ -20,8 +20,8 @@ const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 }) => {
   if (!document) return null;
 
-  const handleSubmit = (values: DocumentFormValues) => {
-    onSubmit(document.id, values);
+  const handleSubmit = (values: DocumentFormValues, file?: File) => {
+    onSubmit(document.id, values, file);
     onClose();
   };
 
@@ -30,6 +30,9 @@ const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Document</DialogTitle>
+          <DialogDescription>
+            Make changes to your document information or upload a new file.
+          </DialogDescription>
         </DialogHeader>
         <DocumentForm 
           defaultValues={{
@@ -39,7 +42,8 @@ const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
             client: document.client,
             status: document.status,
             fileSize: document.fileSize,
-            fileType: document.fileType
+            fileType: document.fileType,
+            fileName: document.fileName
           }} 
           onSubmit={handleSubmit}
           isLoading={isLoading}
