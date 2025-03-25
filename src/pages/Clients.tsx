@@ -1,96 +1,105 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import PageHeader from '@/components/ui/PageHeader';
-import { PlusCircle, Search, Filter, FileDown, MoreHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-// Sample client data
-const clients = [
-  {
-    id: 1,
-    name: "Construcciones Modernas S.L.",
-    contact: "Carlos Martínez",
-    email: "carlos@construccionesmodernas.es",
-    phone: "+34 612 345 678",
-    location: "Barcelona",
-    status: "Active",
-    projects: 5
-  },
-  {
-    id: 2,
-    name: "Reformas Integrales Martínez",
-    contact: "Ana Martínez",
-    email: "ana@reformasmartinez.com",
-    phone: "+34 623 456 789",
-    location: "Madrid",
-    status: "Active",
-    projects: 3
-  },
-  {
-    id: 3,
-    name: "Grupo Constructor Ibérico",
-    contact: "Javier Santos",
-    email: "jsantos@grupoiberico.es",
-    phone: "+34 634 567 890",
-    location: "Valencia",
-    status: "Active",
-    projects: 2
-  },
-  {
-    id: 4,
-    name: "InnovaHogar Barcelona",
-    contact: "Marta Puig",
-    email: "mpuig@innovahogar.cat",
-    phone: "+34 645 678 901",
-    location: "Barcelona",
-    status: "Pending",
-    projects: 1
-  },
-  {
-    id: 5,
-    name: "Constructora López y Asociados",
-    contact: "Roberto López",
-    email: "rlopez@clopez.es",
-    phone: "+34 656 789 012",
-    location: "Sevilla",
-    status: "Completed",
-    projects: 4
-  },
-  {
-    id: 6,
-    name: "Edificaciones Modernas S.A.",
-    contact: "Elena Gomez",
-    email: "egomez@edificacionesmodernas.com",
-    phone: "+34 667 890 123",
-    location: "Málaga",
-    status: "Active",
-    projects: 2
-  },
-  {
-    id: 7,
-    name: "Construcciones Durán",
-    contact: "Miguel Durán",
-    email: "mduran@construccionesduran.es",
-    phone: "+34 678 901 234",
-    location: "Bilbao",
-    status: "Pending",
-    projects: 1
-  },
-  {
-    id: 8,
-    name: "Architech Solutions",
-    contact: "Paula Vega",
-    email: "pvega@architech.com",
-    phone: "+34 689 012 345",
-    location: "Madrid",
-    status: "Active",
-    projects: 3
-  }
-];
+import { PlusCircle, Search, Filter, FileDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import ClientList, { Client } from '@/components/clients/ClientList';
+import AddClientDialog from '@/components/clients/AddClientDialog';
+import EditClientDialog from '@/components/clients/EditClientDialog';
+import DeleteClientDialog from '@/components/clients/DeleteClientDialog';
+import { ClientFormValues } from '@/components/clients/ClientForm';
+import { useNavigate } from 'react-router-dom';
+import { initialClients } from '../data/mockData';
 
 const Clients = () => {
+  const navigate = useNavigate();
+  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Filter clients based on search query
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAddClient = async (values: ClientFormValues) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create a new client with a generated ID
+      const newClient: Client = {
+        id: clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1,
+        ...values,
+        projects: 0
+      };
+      
+      setClients(prev => [...prev, newClient]);
+      toast.success("Client added successfully!");
+    } catch (error) {
+      console.error("Error adding client:", error);
+      toast.error("Failed to add client");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditClient = async (id: number, values: ClientFormValues) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setClients(prev => 
+        prev.map(client => 
+          client.id === id 
+            ? { ...client, ...values } 
+            : client
+        )
+      );
+      toast.success("Client updated successfully!");
+    } catch (error) {
+      console.error("Error updating client:", error);
+      toast.error("Failed to update client");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!selectedClient) return;
+    
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setClients(prev => prev.filter(client => client.id !== selectedClient.id));
+      toast.success("Client deleted successfully!");
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      toast.error("Failed to delete client");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewClient = (id: number) => {
+    navigate(`/clients/${id}`);
+  };
+
   return (
     <Layout>
       <PageHeader 
@@ -101,7 +110,11 @@ const Clients = () => {
           <FileDown size={16} />
           <span>Export</span>
         </Button>
-        <Button size="sm" className="gap-1">
+        <Button 
+          size="sm" 
+          className="gap-1"
+          onClick={() => setIsAddDialogOpen(true)}
+        >
           <PlusCircle size={16} />
           <span>Add Client</span>
         </Button>
@@ -113,10 +126,12 @@ const Clients = () => {
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={16} className="text-muted-foreground" />
             </div>
-            <input
+            <Input
               type="text"
               placeholder="Search clients..."
-              className="pl-10 pr-4 py-2 w-full border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full"
             />
           </div>
           
@@ -128,74 +143,25 @@ const Clients = () => {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-secondary/40">
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Projects
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            
-            <tbody className="divide-y">
-              {clients.map((client) => (
-                <tr 
-                  key={client.id} 
-                  className="hover:bg-secondary/30 transition-colors duration-200"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium">{client.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">{client.contact}</div>
-                    <div className="text-xs text-muted-foreground">{client.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {client.location}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={cn(
-                      "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                      client.status === "Active" ? "bg-green-100 text-green-800" :
-                      client.status === "Pending" ? "bg-amber-100 text-amber-800" :
-                      "bg-blue-100 text-blue-800"
-                    )}>
-                      {client.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {client.projects}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal size={16} />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ClientList 
+          clients={filteredClients}
+          onEdit={(client) => {
+            setSelectedClient(client);
+            setIsEditDialogOpen(true);
+          }}
+          onDelete={(id) => {
+            const client = clients.find(c => c.id === id);
+            if (client) {
+              setSelectedClient(client);
+              setIsDeleteDialogOpen(true);
+            }
+          }}
+          onView={handleViewClient}
+        />
         
         <div className="px-6 py-4 border-t flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">8</span> of <span className="font-medium">124</span> clients
+            Showing <span className="font-medium">{filteredClients.length}</span> of <span className="font-medium">{clients.length}</span> clients
           </div>
           
           <div className="flex gap-1">
@@ -217,6 +183,29 @@ const Clients = () => {
           </div>
         </div>
       </div>
+      
+      {/* Dialogs for CRUD operations */}
+      <AddClientDialog 
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSubmit={handleAddClient}
+        isLoading={isLoading}
+      />
+      
+      <EditClientDialog 
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSubmit={handleEditClient}
+        client={selectedClient}
+        isLoading={isLoading}
+      />
+      
+      <DeleteClientDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDeleteClient}
+        isLoading={isLoading}
+      />
     </Layout>
   );
 };
