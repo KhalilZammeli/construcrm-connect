@@ -13,10 +13,36 @@ import EditDocumentDialog from '@/components/documents/EditDocumentDialog';
 import DeleteDocumentDialog from '@/components/documents/DeleteDocumentDialog';
 import { Document, DocumentFormValues } from '@/components/documents/DocumentForm';
 import { initialDocuments } from '../data/mockDocuments';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import DocumentPreview from '@/components/documents/DocumentPreview';
+import DocumentNotes, { Note } from '@/components/documents/DocumentNotes';
+
+// Initial mock notes data
+const initialNotes: Note[] = [
+  {
+    id: 1,
+    text: "This building permit application looks good. We should proceed with the submission process.",
+    createdAt: "2023-07-15T09:30:00Z",
+    documentId: 1,
+    user: {
+      name: "Emma Rodriguez",
+    }
+  },
+  {
+    id: 2,
+    text: "We need to make some revisions to section 3.2 of this report before final submission.",
+    createdAt: "2023-08-06T14:20:00Z",
+    documentId: 2,
+    user: {
+      name: "Daniel Chen",
+    }
+  }
+];
 
 const Documents = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -106,6 +132,13 @@ const Documents = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setDocuments(prev => prev.filter(doc => doc.id !== selectedDocument.id));
+      // Also remove notes related to this document
+      setNotes(prev => prev.filter(note => note.documentId !== selectedDocument.id));
+      
+      if (selectedDocument.id === selectedDocument?.id) {
+        setSelectedDocument(null);
+      }
+      
       toast.success("Document deleted successfully!");
       setIsDeleteDialogOpen(false);
     } catch (error) {
@@ -116,8 +149,21 @@ const Documents = () => {
     }
   };
 
-  const handleViewDocument = (id: number) => {
-    navigate(`/documents/${id}`);
+  const handleAddNote = (noteText: string) => {
+    if (!selectedDocument) return;
+    
+    const newNote: Note = {
+      id: notes.length > 0 ? Math.max(...notes.map(n => n.id)) + 1 : 1,
+      text: noteText,
+      createdAt: new Date().toISOString(),
+      documentId: selectedDocument.id,
+      user: {
+        name: "Current User" // In a real app, this would come from auth context
+      }
+    };
+    
+    setNotes(prev => [...prev, newNote]);
+    toast.success("Note added");
   };
 
   return (
@@ -140,68 +186,93 @@ const Documents = () => {
         </Button>
       </PageHeader>
       
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div className="p-4 border-b flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-muted-foreground" />
+      {/* Main content with split-screen layout */}
+      <div className="h-[calc(100vh-170px)]">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Document list panel */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden h-full flex flex-col">
+              <div className="p-4 border-b flex flex-col sm:flex-row gap-4 justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-muted-foreground" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Search documents..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-4 py-2 w-full"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Filter size={16} />
+                    <span>Filter</span>
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Make document list scrollable */}
+              <div className="overflow-auto flex-1">
+                <DocumentList 
+                  documents={filteredDocuments}
+                  onEdit={(doc) => {
+                    setSelectedDocument(doc);
+                    setIsEditDialogOpen(true);
+                  }}
+                  onDelete={(id) => {
+                    const doc = documents.find(d => d.id === id);
+                    if (doc) {
+                      setSelectedDocument(doc);
+                      setIsDeleteDialogOpen(true);
+                    }
+                  }}
+                  onView={(id) => {
+                    const doc = documents.find(d => d.id === id);
+                    if (doc) {
+                      setSelectedDocument(doc);
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="px-6 py-4 border-t flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  Showing <span className="font-medium">{filteredDocuments.length}</span> of <span className="font-medium">{documents.length}</span> documents
+                </div>
+              </div>
             </div>
-            <Input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full"
-            />
-          </div>
+          </ResizablePanel>
           
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1">
-              <Filter size={16} />
-              <span>Filter</span>
-            </Button>
-          </div>
-        </div>
-        
-        <DocumentList 
-          documents={filteredDocuments}
-          onEdit={(doc) => {
-            setSelectedDocument(doc);
-            setIsEditDialogOpen(true);
-          }}
-          onDelete={(id) => {
-            const doc = documents.find(d => d.id === id);
-            if (doc) {
-              setSelectedDocument(doc);
-              setIsDeleteDialogOpen(true);
-            }
-          }}
-          onView={handleViewDocument}
-        />
-        
-        <div className="px-6 py-4 border-t flex justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{filteredDocuments.length}</span> of <span className="font-medium">{documents.length}</span> documents
-          </div>
+          <ResizableHandle withHandle />
           
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled>
-              &lt;
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-primary text-primary-foreground">
-              1
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-              2
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-              3
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-              &gt;
-            </Button>
-          </div>
-        </div>
+          {/* Preview and notes panel */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanelGroup direction="vertical">
+              {/* Document preview panel */}
+              <ResizablePanel defaultSize={60}>
+                <div className="bg-white rounded-lg border shadow-sm overflow-hidden h-full">
+                  <DocumentPreview document={selectedDocument} />
+                </div>
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+              
+              {/* Notes panel */}
+              <ResizablePanel defaultSize={40}>
+                <div className="bg-white rounded-lg border shadow-sm overflow-hidden h-full">
+                  <DocumentNotes 
+                    document={selectedDocument} 
+                    notes={notes}
+                    onAddNote={handleAddNote}
+                  />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
       
       {/* Dialogs for CRUD operations */}
